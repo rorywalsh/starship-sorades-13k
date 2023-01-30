@@ -65,6 +65,26 @@ torpedos.frame = 0;
 
 var enemies = [];
 
+var csoundLoaded = false;
+let csound;
+
+CsoundObj.importScripts("./csound/").then(() => {
+	fetch("GameSounds.csd").then((response) => {
+	response.text().then((csd) => {
+		csound = new CsoundObj();
+		csound.compileCSD(csd);
+		csound.start();
+		csoundLoaded = true;
+	})
+	})
+});
+
+function playSound(soundfile)
+{
+	var audio = new Audio(soundfile);
+	audio.play();
+}
+
 function toggleFullscreen()
 {
 	if (document['fullscreenElement'] || document['mozFullScreen'] || document['webkitIsFullScreen'])
@@ -97,7 +117,7 @@ function hurt(e)
 {
 	if (ship.shield.t)
 	{
-		play(2);
+		playSound("2.ogg");
 		return;
 	}
 	// Merge multiple shots in a short time like they are a single shot
@@ -131,11 +151,11 @@ function hurt(e)
 		input.value = text + ' ' + url;
 		input.onfocus = function() { this.select(); }
 		input.focus();
-		play(14); // Game over
+		playSound("14.ogg");
 	}
 	else if (ship.e < 25)
-		play(17); // Low energy
-	play(1);
+		playSound("17.ogg"); // Low energy
+	playSound("1.ogg");
 	// Remove some weapons if the player was hurt
 	if (ship.weapon > 2)
 		ship.weapon--;
@@ -537,7 +557,7 @@ enemies.TYPES = [
 			if (this.t < 5)
 				this.t = 5;
 			if (spawnTorpedo(this, angle, this.maxAngle))
-				play(19);
+				playSound("19.ogg");
 		}
 	},
 	// Enemy number 1 is slightly bigger than enemy number 0, but almost the same
@@ -597,7 +617,7 @@ enemies.TYPES = [
 				angle = -this.maxAngle;
 			if (spawnTorpedo(this, angle + .1) ||
 			    spawnTorpedo(this, angle - .1))
-				play(20);
+				playSound("20.ogg");
 		}
 	},
 	// Enemy number 2 is probably the most dangerous, fires in all directions but does not aim
@@ -671,7 +691,7 @@ enemies.TYPES = [
 			for (var i = Math.PI / 8; i < Math.PI * 2; i += Math.PI)
 				result = spawnTorpedo(this, this.fireDirection + i);
 			if (result)
-				play(18);
+				playSound("18.ogg");
 		}
 	},
 	// Enemy number 3 was the first I created, the idea was it grows bigger and bigger like in "Warning Forever"
@@ -765,7 +785,7 @@ enemies.TYPES = [
 			// Always aim at the player and fire randomly, 1 shot every 3 seconds on average
 			this.t = Math.random() * 6 * 30 | 0;
 			if (spawnTorpedo(this, angle))
-				play(12);
+				playSound("12.ogg");
 		}
 	}
 ];
@@ -891,7 +911,13 @@ function gameloop()
 					fire(16, 0);
 			}
 		}
-		play(ship.weapon > 2 ? 16 : ship.weapon > 0 ? 0 : 15);
+		if(ship.weapon>2)
+			playSound("16.ogg");
+		else if(ship.weapon>0)
+			playSound("15.ogg");
+		else 
+			csound.readScore("i1 0 2");
+		//play(ship.weapon > 2 ? 16 : ship.weapon > 0 ? 0 : 15);
 	}
 	ship.angle *= ship.ANGLE_FACTOR;
 	if (keys[37])
@@ -983,7 +1009,7 @@ function gameloop()
 						spawnBonus(torpedos[j]);
 					explode(torpedos[j].x, torpedos[j].y);
 					torpedos[j].y = l.HEIGHT * 2;
-					play(11);
+					playSound("11.ogg");
 				}
 				//else
 				//{
@@ -1025,17 +1051,17 @@ function gameloop()
 					if (ship.weapon < 4)
 					{
 						ship.weapon++;
-						play(5);
+						playSound("5.ogg");
 					}
-					else play(6);
+					else playSound("6.ogg");
 					break;
 				case 'E':
 					if (ship.e < 100)
 					{
 						ship.osd = ship.MAX_OSD;
-						play(5);
+						playSound("5.ogg");
 					}
-					else play(6);
+					else playSound("6.ogg");
 					ship.e += 5;
 					if (ship.e > 100)
 						ship.e = 100;
@@ -1044,7 +1070,7 @@ function gameloop()
 					// Multiple shields are not set but loaded, hence the addition
 					ship.shield.t += ship.shield.MAX_T * ship.shield.MAX_T *
 						2 / (ship.shield.t + ship.shield.MAX_T * 2) | 0;
-					play(3);
+					playSound("3.ogg");
 					break;
 				case 'B':
 					for (var j = enemies.length; j--; )
@@ -1058,10 +1084,10 @@ function gameloop()
 					// Delete all torpedos
 					torpedos.length = 0;
 					l.bomb = l.MAX_BOMB;
-					play(13);
+					playSound("13.ogg");
 					break;
 				default:
-					play(7);
+					playSound("7.ogg");
 			}
 			bonus[i].y = l.HEIGHT * 2;
 		}
@@ -1138,7 +1164,7 @@ function gameloop()
 		if (ship.shield.t > 30 || Math.random() > .5)
 			a.drawImage(ship.shield.image, ship.x - ship.R + .5 | 0, ship.y - ship.R + .5 | 0);
 		if (!--ship.shield.t)
-			play(4);
+			playSound("4.ogg");
 	}
 
 	// Test only: l.text.t=0;
@@ -1154,7 +1180,7 @@ function gameloop()
 		spawnEnemy(3, -2.25 * l.HEIGHT);
 		spawnText('WAVE ' + l.level);
 		l.bomb = l.MAX_BOMB;
-		play(8);
+		playSound("8.ogg");
 	}
 
 	enemyLoop:
@@ -1208,11 +1234,11 @@ function gameloop()
 					explode(enemies[i].x, enemies[i].y, enemies[i].r * 2);
 					explode(enemies[i].x, enemies[i].y, enemies[i].r * 3);
 					enemies.splice(i, 1);
-					play(10);
+					playSound("10.ogg");
 					continue enemyLoop;
 				}
 				else
-					play(9);
+					playSound("9.ogg");
 				break;
 			}
 		}
@@ -1271,79 +1297,31 @@ function gameloop()
 	//window.setTimeout(gameloop, 33);
 }
 
-// Sound effects created with as3sfxr, see http://www.superflashbros.net/as3sfxr/
-var sfx = [
-	// 0 = Player shoots (Schuss_004)
-	'8|0,,.167,.1637,.1361,.7212,.0399,-.363,,,,,,.1314,.0517,,.0154,-.1633,1,,,.0515,,.2',
-	// 1 = Player is hurt (Treffer_002)
-	'4|3,.0704,.0462,.3388,.4099,.1599,,.0109,-.3247,.0006,,-.1592,.4477,.1028,.1787,,-.0157,-.3372,.1896,.1628,,.0016,-.0003,.5',
-	// 2 = Player shield is hit (Treffer_001_Schutzschild)
-	'4|3,.1,.3899,.1901,.2847,.0399,,.0007,.1492,,,-.9636,,,-.3893,.1636,-.0047,.7799,.1099,-.1103,.5924,.484,.1547,1',
-	// 3 = Player shield activated (Schutzschild_ein)
-	'1|1,,.0398,,.4198,.3891,,.4383,,,,,,,,.616,,,1,,,,,.5',
-	// 4 = Player shield deactivated (Schutzschild_aus)
-	'1|1,.1299,.27,.1299,.4199,.1599,,.4383,,,,-.6399,,,-.4799,.7099,,,1,,,,,.5',
-	// 5 = Player get weapon upgrade (Upgrade_001)
-	'1|0,.43,.1099,.67,.4499,.6999,,-.2199,-.2,.5299,.5299,-.0399,.3,,.0799,.1899,-.1194,.2327,.8815,-.2364,.43,.2099,-.5799,.5',
-	// 6 = Player collect non-applicable bonus (Einsammeln_002)
-	'1|0,.2,.1099,.0733,.0854,.14,,-.1891,.36,,,.9826,,,.4642,,-.1194,.2327,.8815,-.2364,.0992,.0076,.2,.5',
-	// 7 = Player collect money (Einsammeln_001)
-	'2|0,.09,.1099,.0733,.0854,.1099,,-.1891,.827,,,.9826,,,.4642,,-.1194,.2327,.8815,-.2364,.0992,.0076,.8314,.5',
-	// 8 = Alarm (new_wave)
-	'1|1,.1,1,.1901,.2847,.3199,,.0007,.1492,,,-.9636,,,-.3893,.1636,-.0047,.6646,.9653,-.1103,.5924,.484,.1547,.6',
-	// 9 = Big enemy is hurt (Treffer_001)
-	'8|3,.1,.3899,.1901,.2847,.0399,,.0007,.1492,,,-.9636,,,-.3893,.1636,-.0047,.6646,.9653,-.1103,.5924,.484,.1547,.4',
-	// 10 = Big enemy is destroyed (Explosion_001)
-	'4|3,.2,.1899,.4799,.91,.0599,,-.2199,-.2,.5299,.5299,-.0399,.3,,.0799,.1899,-.1194,.2327,.8815,-.2364,.43,.2099,-.5799,.5',
-	// 11 = Small torpedo is destroyed (Explosion_003)
-	'4|3,,.3626,.5543,.191,.0731,,-.3749,,,,,,,,,,,1,,,,,.4',
-	// 12 = Enemy shoots (Schuss_002)
-	'4|1,.071,.3474,.0506,.1485,.5799,.2,-.2184,-.1405,.1681,,-.1426,,.9603,-.0961,,.2791,-.8322,.2832,.0009,,.0088,-.0082,.3',
-	// 13 = Bomb explodes (Bombe)
-	'1|3,.05,.3365,.4591,.4922,.1051,,.015,,,,-.6646,.7394,,,,,,1,,,,,.7',
-	// 14 = Player died (Gameover_001)
-	'1|1,1,.09,.5,.4111,.506,.0942,.1499,.0199,.8799,.1099,-.68,.0268,.1652,.62,.6999,-.0399,.4799,.5199,-.0429,.0599,.8199,-.4199,.7',
-	// 15 = Player shoots with the smallest weapon (Spielerschuss_001)
-	'8|2,,.1199,.15,.1361,.5,.0399,-.363,-.4799,,,,,.1314,.0517,,.0154,-.1633,1,,,.0515,,.2',
-	// 16 = Player shoots with one of the more powerful weapons (Spielerschuss_002)
-	'8|2,,.98,.4699,.07,.7799,.0399,-.28,-.4799,.2399,.1,,.36,.1314,.0517,,.0154,-.1633,1,,.37,.0399,.54,.1',
-	// 17 = Players energy is below 25 % (Wenig_Energie)
-	'1|0,.9705,.0514,.5364,.5273,.4816,.0849,.1422,.205,.7714,.1581,-.7685,.0822,.2147,.6062,.7448,-.0917,.4009,.6251,.1116,.0573,.9005,-.3763,.3',
-	// 18 = The round enemy 3 shoots (Gegnerschuss_002)
-	'4|0,.0399,.1362,.0331,.2597,.85,.0137,-.3976,,,,,,.2099,-.72,,,,1,,,,,.3',
-	// 19 = The smallest enemy 1 shoots (Gegnerschuss_007)
-	'4|0,,.2863,,.3048,.751,.2,-.316,,,,,,.4416,.1008,,,,1,,,.2962,,.3',
-	// 20 = The medium enemy 2 shoots (Gegnerschuss_004)
-	'4|0,,.3138,,.0117,.7877,.1583,-.3391,-.04,,.0464,.0585,,.4085,-.4195,,-.024,-.0396,1,-.0437,.0124,.02,.0216,.3',
-	// 21 = Intro
-	'1|0,1,.8799,.3499,.17,.61,.1899,-.3,-.18,.3,.6399,-.0279,.0071,.8,-.1599,.5099,-.46,.5199,.25,.0218,.49,.4,-.2,.3'
-];
-
 // This is required to make the "LOADING" message show up on the screen in slower web browsers
 window.setTimeout(function()
 {
-	for (var i = sfx.length; i--; )
-	{
-		var params = sfx[i].split('|', 2);
-		sfx[i] = [];
-		sfx[i].i = 0;
-		if (typeof Audio === 'function')
-			try
-			{
-				// Export for the Closure Compiler
-				var url = jsfxr(params[1]);
-				//sfx[0].push(new Audio('shot.ogg'));
-				for (; params[0]--; )
-					sfx[i].push(new Audio(url));
-			}
-			catch (e)
-			{
-				// This happens in Internet Explorer 9, but I can live with that
-				//alert(e);
-			}
-	}
+	// for (var i = sfx.length; i--; )
+	// {
+	// 	var params = sfx[i].split('|', 2);
+	// 	sfx[i] = [];
+	// 	sfx[i].i = 0;
+	// 	if (typeof Audio === 'function')
+	// 		try
+	// 		{
+	// 			// Export for the Closure Compiler
+	// 			var url = jsfxr(params[1]);
+	// 			//sfx[0].push(new Audio('shot.ogg'));
+	// 			for (; params[0]--; )
+	// 				sfx[i].push(new Audio(url));
+	// 		}
+	// 		catch (e)
+	// 		{
+	// 			// This happens in Internet Explorer 9, but I can live with that
+	// 			//alert(e);
+	// 		}
+	// }
 	interval = window.setInterval(gameloop, 33);
 	// Alternative game loop technique
 	//gameloop();
-	play(21);
+	playSound("21.ogg");
 }, 0);
