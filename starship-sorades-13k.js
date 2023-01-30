@@ -65,20 +65,6 @@ torpedos.frame = 0;
 
 var enemies = [];
 
-var csoundLoaded = false;
-let csound;
-
-CsoundObj.importScripts("./csound/").then(() => {
-	fetch("GameSounds.csd").then((response) => {
-	response.text().then((csd) => {
-		csound = new CsoundObj();
-		csound.compileCSD(csd);
-		csound.start();
-		csoundLoaded = true;
-	})
-	})
-});
-
 function playSound(soundfile)
 {
 	var audio = new Audio(soundfile);
@@ -915,8 +901,8 @@ function gameloop()
 			playSound("16.ogg");
 		else if(ship.weapon>0)
 			playSound("15.ogg");
-		else 
-			csound.readScore("i1 0 2");
+		
+  		playSound("22.ogg");
 		//play(ship.weapon > 2 ? 16 : ship.weapon > 0 ? 0 : 15);
 	}
 	ship.angle *= ship.ANGLE_FACTOR;
